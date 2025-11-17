@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spoimbo | Music is Home</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --text-color: #ffffff;
+            --accent: #FFD700;
+            --gray: #333333;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding-bottom: 120px;
+        }
+        .navbar {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--gray);
+            background: black;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            flex-wrap: wrap;
+        }
+        .logo {
+            font-size: 20px;
+            font-weight: bold;
+            border: 2px solid var(--text-color);
+            padding: 5px 10px;
+            letter-spacing: 2px;
+            display: inline-block;
+        }
+        .caption { font-size: 10px; color: var(--accent); margin-top: 2px; }
+        
+        /* Search Bar Style */
+        .search-container {
+            flex-grow: 1; 
+            margin: 0 15px;
+            min-width: 200px;
+        }
+        .search-form { display: flex; }
+        .search-input {
+            width: 100%; padding: 8px; 
+            border-radius: 20px 0 0 20px; border: none; outline: none;
+            background: #222; color: white;
+        }
+        .search-btn {
+            background: var(--accent); border: none; 
+            padding: 8px 15px; border-radius: 0 20px 20px 0; cursor: pointer;
+        }
+
+        .section-title {
+            margin: 20px;
+            font-size: 18px;
+            border-bottom: 1px solid var(--accent);
+            display: inline-block;
+            padding-bottom: 5px;
+            color: var(--accent);
+        }
+        
+        .scroll-container {
+            display: flex;
+            overflow-x: auto;
+            padding: 0 20px;
+            gap: 15px;
+            scrollbar-width: none;
+        }
+        .scroll-container::-webkit-scrollbar { display: none; }
+
+        .card {
+            min-width: 130px;
+            max-width: 130px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .card:active { transform: scale(0.95); }
+        .card img {
+            width: 130px; height: 130px; border-radius: 8px; object-fit: cover;
+            border: 1px solid #333;
+        }
+        .card h4 { 
+            margin: 8px 0 2px 0; font-size: 13px; 
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+        }
+        .card p { margin: 0; color: #aaa; font-size: 11px; }
+
+        .player-bar {
+            position: fixed; bottom: 0; width: 100%;
+            background-color: #111; padding: 10px 15px;
+            display: flex; flex-direction: column;
+            border-top: 1px solid var(--accent);
+            box-sizing: border-box;
+        }
+        .player-info { display: flex; align-items: center; margin-bottom: 10px; }
+        .player-info img { width: 40px; height: 40px; border-radius: 4px; margin-right: 10px; }
+        .controls { display: flex; justify-content: center; align-items: center; width: 100%; }
+        .controls button {
+            background: none; border: none; color: var(--text-color);
+            font-size: 28px; cursor: pointer; margin: 0 20px;
+        }
+        .premium-btn {
+            background-color: var(--accent); color: black; padding: 5px 10px;
+            text-decoration: none; border-radius: 20px; font-weight: bold; font-size: 10px;
+            border: none; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <div style="margin-bottom: 5px;">
+            <div class="logo">SI</div>
+            <div class="caption">MUSIC IS HOME</div>
+        </div>
+        
+        <div class="search-container">
+            <form method="get" class="search-form">
+                <input type="text" name="q" class="search-input" 
+                       placeholder="Search Artist..." value="{{ search_query|default:'' }}">
+                <button type="submit" class="search-btn">🔍</button>
+            </form>
+        </div>
+
+        <div>
+            {% if is_premium %}
+                <span style="color: var(--accent); font-size: 12px; font-weight:bold;">★ PREMIUM</span>
+            {% else %}
+                <button onclick="payMpesa(30)" class="premium-btn">PAY 30 KES TO SKIP</button>
+            {% endif %}
+            <a href="{% url 'logout' %}" style="color: #666; font-size: 10px; text-decoration: none; margin-left: 10px;">LOGOUT</a>
+        </div>
+    </div>
+
+    {% if not is_registered %}
+    <div style="background: #800000; color: white; padding: 10px; text-align: center; font-size: 12px;">
+        ⚠ Account not active. <button class="premium-btn" onclick="payMpesa(10)">Pay 10 KES Registration</button>
+    </div>
+    {% endif %}
+
+    {% if api_songs %}
+    <div class="section-title">Search Results for "{{ search_query }}"</div>
+    <div class="scroll-container">
+        {% for song in api_songs %}
+        <div class="card" onclick="loadAndPlay({{ songs|length }} + {{ podcasts|length }} + {{ forloop.counter0 }})">
+            <img src="{{ song.cover_image }}" alt="Cover">
+            <h4>{{ song.title }}</h4>
+            <p>{{ song.artist }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="section-title">Recommended Music</div>
+    <div class="scroll-container">
+        {% for song in songs %}
+        <div class="card" onclick="loadAndPlay({{ forloop.counter0 }})">
+            <img src="{{ song.cover_image.url }}" alt="Cover">
+            <h4>{{ song.title }}</h4>
+            <p>{{ song.artist }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="section-title">Podcasts</div>
+    <div class="scroll-container">
+        {% for pod in podcasts %}
+        <div class="card" onclick="loadAndPlay({{ songs|length }} + {{ forloop.counter0 }})">
+            <img src="{{ pod.cover_image.url }}" alt="Cover">
+            <h4>{{ pod.title }}</h4>
+            <p>{{ pod.artist }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="player-bar">
+        <div class="player-info">
+            <img id="np-img" src="" style="display:none;">
+            <div>
+                <div style="font-weight: bold; font-size: 14px;" id="np-title">Select a song</div>
+                <div style="font-size: 11px; color: #aaa;" id="np-artist">Spoimbo</div>
+            </div>
+        </div>
+        <div class="controls">
+            <button onclick="prevSong()">⏮</button>
+            <button onclick="togglePlay()" id="playBtn">▶</button>
+            <button onclick="nextSong()" id="nextBtn">⏭</button>
+        </div>
+        <audio id="audioPlayer"></audio>
+    </div>
+
+    <script>
+        // --- THIS IS THE NEW PLAYLIST LOGIC ---
+        const playlist = [
+            // 1. Local Songs
+            {% for song in songs %}
+            {
+                title: "{{ song.title|escapejs }}",
+                artist: "{{ song.artist|escapejs }}",
+                url: "{{ song.audio_file.url }}",
+                cover: "{{ song.cover_image.url }}"
+            },
+            {% endfor %}
+
+            // 2. Local Podcasts
+            {% for pod in podcasts %}
+            {
+                title: "{{ pod.title|escapejs }}",
+                artist: "{{ pod.artist|escapejs }}",
+                url: "{{ pod.audio_file.url }}",
+                cover: "{{ pod.cover_image.url }}"
+            },
+            {% endfor %}
+
+            // 3. API Search Results
+            {% for song in api_songs %}
+            {
+                title: "{{ song.title|escapejs }}",
+                artist: "{{ song.artist|escapejs }}",
+                url: "{{ song.audio_file|escapejs }}",
+                cover: "{{ song.cover_image|escapejs }}"
+            },
+            {% endfor %}
+        ];
+
+        let currentIndex = -1;
+        const audio = document.getElementById('audioPlayer');
+        const isPremium = "{{ is_premium }}" === "True";
+        const playBtn = document.getElementById('playBtn');
+
+        function loadAndPlay(index) {
+            if (index >= 0 && index < playlist.length) {
+                currentIndex = index;
+                const track = playlist[currentIndex];
+                
+                document.getElementById('np-title').innerText = track.title;
+                document.getElementById('np-artist').innerText = track.artist;
+                const img = document.getElementById('np-img');
+                img.src = track.cover;
+                img.style.display = 'block';
+                
+                audio.src = track.url;
+                audio.play();
+                playBtn.innerText = "⏸";
+            }
+        }
+
+        function togglePlay() {
+            if (currentIndex === -1 && playlist.length > 0) {
+                loadAndPlay(0);
+                return;
+            }
+            if (audio.paused) {
+                audio.play();
+                playBtn.innerText = "⏸";
+            } else {
+                audio.pause();
+                playBtn.innerText = "▶";
+            }
+        }
+
+        function nextSong() {
+            if (isPremium) {
+                if (currentIndex + 1 < playlist.length) {
+                    loadAndPlay(currentIndex + 1);
+                } else {
+                    loadAndPlay(0); // Loop
+                }
+            } else {
+                alert("🔒 PREMIUM FEATURE\n\nPlease pay 30 KES to skip songs.");
+            }
+        }
+
+        function prevSong() {
+            if (audio.currentTime > 3) {
+                audio.currentTime = 0;
+            } else if (currentIndex > 0) {
+                loadAndPlay(currentIndex - 1);
+            }
+        }
+
+        audio.addEventListener('ended', () => {
+            if (isPremium) nextSong();
+            else {
+                playBtn.innerText = "▶";
+                alert("Song finished! Pay 30 KES to auto-play next.");
+            }
+        });
+
+        function payMpesa(amount) {
+            if(confirm(`Send M-Pesa STK Push for KES ${amount} to 0798828381?`)) {
+                fetch(`/pay/${amount}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+                        location.reload();
+                    });
+            }
+        }
+    </script>
+</body>
+</html>
