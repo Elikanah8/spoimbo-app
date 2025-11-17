@@ -80,6 +80,7 @@
             max-width: 130px;
             cursor: pointer;
             transition: transform 0.2s;
+            position: relative; /* For the heart button */
         }
         .card:active { transform: scale(0.95); }
         .card img {
@@ -91,6 +92,24 @@
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
         }
         .card p { margin: 0; color: #aaa; font-size: 11px; }
+
+        /* Heart Button Style */
+        .heart-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            z-index: 10;
+            font-size: 16px;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .heart-active { color: #FFD700; }
 
         .player-bar {
             position: fixed; bottom: 0; width: 100%;
@@ -130,6 +149,8 @@
         </div>
 
         <div>
+            <a href="{% url 'library' %}" style="color: #FFD700; font-size: 12px; margin-right: 15px; text-decoration: none; font-weight: bold;">❤ MY LIBRARY</a>
+
             {% if is_premium %}
                 <span style="color: var(--accent); font-size: 12px; font-weight:bold;">★ PREMIUM</span>
             {% else %}
@@ -161,10 +182,15 @@
     <div class="section-title">Recommended Music</div>
     <div class="scroll-container">
         {% for song in songs %}
-        <div class="card" onclick="loadAndPlay({{ forloop.counter0 }})">
-            <img src="{{ song.cover_image.url }}" alt="Cover">
-            <h4>{{ song.title }}</h4>
-            <p>{{ song.artist }}</p>
+        <div class="card">
+            <button class="heart-btn {% if song in user.userprofile.favorites.all %}heart-active{% endif %}" 
+                    onclick="toggleHeart(event, {{ song.id }}, this)">❤</button>
+            
+            <div onclick="loadAndPlay({{ forloop.counter0 }})">
+                <img src="{{ song.cover_image.url }}" alt="Cover">
+                <h4>{{ song.title }}</h4>
+                <p>{{ song.artist }}</p>
+            </div>
         </div>
         {% endfor %}
     </div>
@@ -197,7 +223,7 @@
     </div>
 
     <script>
-        // --- THIS IS THE NEW PLAYLIST LOGIC ---
+        // --- PLAYLIST LOGIC ---
         const playlist = [
             // 1. Local Songs
             {% for song in songs %}
@@ -235,6 +261,7 @@
         const isPremium = "{{ is_premium }}" === "True";
         const playBtn = document.getElementById('playBtn');
 
+        // --- PLAYER FUNCTIONS ---
         function loadAndPlay(index) {
             if (index >= 0 && index < playlist.length) {
                 currentIndex = index;
@@ -294,6 +321,7 @@
             }
         });
 
+        // --- PAYMENT FUNCTION ---
         function payMpesa(amount) {
             if(confirm(`Send M-Pesa STK Push for KES ${amount} to 0798828381?`)) {
                 fetch(`/pay/${amount}/`)
@@ -303,6 +331,22 @@
                         location.reload();
                     });
             }
+        }
+
+        // --- HEART/FAVORITE FUNCTION ---
+        function toggleHeart(event, songId, btn) {
+            event.stopPropagation(); // Don't play the song when clicking heart
+            
+            fetch(`/favorite/${songId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.liked) {
+                        btn.classList.add('heart-active');
+                    } else {
+                        btn.classList.remove('heart-active');
+                    }
+                })
+                .catch(err => console.error(err));
         }
     </script>
 </body>

@@ -31,5 +31,6 @@ urlpatterns = [
     
     # NEW SIGNUP PATH
     path('signup/', views.signup, name='signup'), 
-
+    path('favorite/<int:song_id>/', views.toggle_favorite, name='toggle_favorite'),
+    path('library/', views.my_library, name='library'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

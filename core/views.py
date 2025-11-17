@@ -91,3 +91,32 @@ def signup(request):
     else:
         form = UserCreationForm()
     return render(request, 'signup.html', {'form': form})
+
+# In core/views.py
+from django.shortcuts import get_object_or_404 # Add this import at the top if missing
+
+@login_required
+def toggle_favorite(request, song_id):
+    song = get_object_or_404(Content, id=song_id)
+    profile = request.user.userprofile
+    
+    if song in profile.favorites.all():
+        profile.favorites.remove(song)
+        liked = False
+    else:
+        profile.favorites.add(song)
+        liked = True
+        
+    return JsonResponse({'liked': liked})
+
+@login_required
+def my_library(request):
+    profile = request.user.userprofile
+    # Get user's favorite songs
+    my_songs = profile.favorites.filter(content_type='music')
+    my_podcasts = profile.favorites.filter(content_type='podcast')
+    
+    return render(request, 'library.html', {
+        'songs': my_songs, 
+        'podcasts': my_podcasts
+    })
